@@ -1,0 +1,7 @@
+{
+  "name": "CoreGate pro",
+  "upstream_repository": "zimky180/CoreGate",
+  "upstream_commit": "040d71f493b8a29d5b07010f94977374d1b9271a",
+  "status": "adaptation development baseline",
+  "runtime_implementation_changed": false
+}
