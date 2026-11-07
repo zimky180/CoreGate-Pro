@@ -2,8 +2,7 @@
 
 面向全机型适配的 CoreGate 开发仓库，由 zimky 维护。
 
-当前版本为 v2.3.5-pro。锁核已完成全机型适配；限频已完成部分机型适配。基于 CoreGate v2.3.0 最新冻结修复提交：
-https://github.com/zimky180/CoreGate/commit/040d71f493b8a29d5b07010f94977374d1b9271a
+当前版本为 v2.3.5-pro。锁核已完成全机型适配；
 
 ## 当前内容
 
