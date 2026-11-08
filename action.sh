@@ -1,18 +1,4 @@
 #!/system/bin/sh
-# ================================================================
-# CoreGate 核心门控 · 动作按钮（KernelSU 管理器里的「执行」）
-#
-# v2.2.1 起配置入口全部收敛到原生 App，模块不再提供 WebUI。
-# 但 KernelSU 的动作按钮完全由本文件是否存在决定：
-#   - 没有 action.sh  → 管理器里连按钮都不出现
-#   - 有 action.sh    → 出现按钮，点击执行本脚本
-# 所以这个脚本的唯一职责：把用户直接送进 CoreGate App，
-# 顺带在未安装 App / 未 Root 时给出人能看懂的提示。
-#
-# 设计约束（与模块哲学一致）：
-#   - 只读不写：不改 config.json、不动 state、不触碰任何 sysfs
-#   - 任何失败都只打印提示，绝不让管理器卡住
-# ================================================================
 
 MODDIR=${0%/*}
 
@@ -20,7 +6,6 @@ PKG_US="com.zimky.coregateUS"
 PKG_OLD="com.zimky.coregate"
 ACT="${PKG_US}/com.zimky.coregateUS.MainActivity"
 
-# --- 找到一个已安装的 CoreGate ---
 TARGET=""
 if pm list packages 2>/dev/null | grep -qx "package:$PKG_US"; then
     TARGET="$PKG_US"
@@ -57,10 +42,8 @@ if [ -z "$TARGET" ]; then
     exit 0
 fi
 
-# --- 直接拉起 App ---
 am start -n "$ACT" >/dev/null 2>&1
 if [ $? -ne 0 ]; then
-    # 兜底：显式指定 action/category，兼容 Activity 名被改名的情况
     monkey -p "$TARGET" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 fi
 

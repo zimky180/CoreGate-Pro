@@ -1,5 +1,4 @@
 #!/system/bin/sh
-# Upgrade migration only. Retain supported values, remove retired fields, never reset at boot.
 cg_migrate_config() {
     cg_cfg="$1"; cg_defaults="$2"
     [ -s "$cg_cfg" ] || return 1

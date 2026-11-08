@@ -2,6 +2,31 @@
   "name": "CoreGate pro",
   "upstream_repository": "zimky180/CoreGate",
   "upstream_commit": "040d71f493b8a29d5b07010f94977374d1b9271a",
-  "status": "adaptation development baseline",
-  "runtime_implementation_changed": false
+  "status": "local v2.3.2-pro reconciliation review",
+  "runtime_implementation_changed": true,
+  "version": "v2.3.2-pro",
+  "synchronized_from": "local CoreGate v2.3.3",
+  "changes": [
+    "Split existing Pro runtime into libraries without changing policy semantics",
+    "Bundle the same optional AArch64 read-only Rust observer as standard v2.3.3",
+    "Preserve Pro hardware adaptation and disabled first-install defaults",
+    "Reconcile selected CPU online state on each normal lock poll, retrying vendor-reopened cores",
+    "Retry failed unlocks, old-selection restoration, and disabled-mode recovery"
+  ],
+  "observer_sha256": "850877ea02d6bcbf39ecc56e44f38ead49f99cd8a170f515868d71d95cddf464",
+  "scene_cpu_control": {
+    "repository": "https://github.com/helloklf/vtools",
+    "commit": "d735955f723329896386ed03e0608ce1bc2082a5",
+    "method": "CpuFrequencyUtils.setCoreOnlineState",
+    "device_tested": false
+  },
+  "soc_freqcap_adapt": {
+    "repository": "_socfreqcap_review (Soc-Freqcap)",
+    "source_file": "adapt.c",
+    "author": "Mess1on",
+    "permission_obtained_via": "User reports obtaining permission by contacting Mess1on on Coolapk",
+    "license_note": "Adaptation based on the upstream implementation; permission reported by project owner.",
+    "implementation": "CoreGate-Pro/lib/adapt.sh",
+    "device_tested": false
+  }
 }
