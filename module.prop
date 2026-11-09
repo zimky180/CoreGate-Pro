@@ -1,7 +1,0 @@
-id=CoreGate
-name=CoreGate pro
-version=v2.3.5-pro
-versionCode=235
-author=zimky
-description=CoreGate pro 全机型适配开发版；基于 CoreGate v2.3.0，兼容性仍在开发。
-updateJson=https://raw.githubusercontent.com/zimky180/CoreGate-Pro/main/update.json
