@@ -1,7 +1,7 @@
 id=CoreGate
 name=CoreGate pro
-version=v2.4.2-pro
-versionCode=242
+version=v2.4.3-pro
+versionCode=243
 author=zimky
-description=CoreGate pro 全机型适配开发版；基于 CoreGate v2.3.0，兼容性仍在开发。
+description=CoreGate pro 全机型适配开发版；核心引擎基于 CoreGate v2.3.x，热插拔恢复机制已加固。
 updateJson=https://raw.githubusercontent.com/zimky180/CoreGate-Pro/main/update.json

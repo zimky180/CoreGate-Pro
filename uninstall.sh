@@ -33,12 +33,10 @@ if [ "$freq_restore_failed" != 0 ] || [ -s "$FREQ_SNAP_FILE" ] || [ -s "$GPU_SNA
     exit 1
 fi
 ui_print "- 恢复 core_ctl 原始状态..."
-if [ -f "$CONFIG_DIR/scene.hotplug.state" ]; then
-    if ! cat "$CONFIG_DIR/scene.hotplug.state" > "$CG_CPU_ROOT/cpuhotplug/enabled" 2>/dev/null; then
-        ui_print "! 热插拔状态恢复失败，保留数据供重试"
-        exit 1
-    fi
-    rm -f "$CONFIG_DIR/scene.hotplug.state"
+# 与运行时共用 cg_hotplug_restore：含“没有 state 却仍是关闭态”的兜底自愈分支
+if ! cg_hotplug_restore; then
+    ui_print "! 热插拔状态恢复失败，保留数据供重试"
+    exit 1
 fi
 
 if [ -f "$CORE_CTL_BACKUP" ]; then

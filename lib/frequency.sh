@@ -81,6 +81,14 @@ restore_performance() {
         [ "${FREQ_RESTORE_FAILED:-0}" = 1 ] || log "限频恢复未完成：保留失败状态，下轮重试"
         FREQ_RESTORE_FAILED=1
     fi
+    # 游戏/录屏结束是解锁的唯一出口，这里再兜一次热插拔与 core_ctl，
+    # 防止 do_unlock 因 already-online 提前 return 而跳过恢复。
+    restore_core_ctl || log "热插拔/core_ctl 恢复未完成，下轮重试"
+    local c offline=""
+    for c in $(all_cpus); do
+        if ! cpu_online "$c"; then offline="$offline $c"; fi
+    done
+    if [ -n "$offline" ]; then UNLOCK_FAILED=" $offline"; else UNLOCK_FAILED=""; fi
     if [ -z "$UNLOCK_FAILED" ] && [ "$FREQ_RESTORE_FAILED" = 0 ]; then
         state=unlocked
     else

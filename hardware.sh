@@ -359,6 +359,67 @@ cg_cpu_is_online() {
         if ((n==1 && a[1]==id) || (n==2 && id>=a[1] && id<=a[2])) found=1
     } END {exit !found}' "$CG_CPU_ROOT/online" 2>/dev/null
 }
+CG_HOTPLUG_NODE=${CG_HOTPLUG_NODE:-$CG_CPU_ROOT/cpuhotplug/enabled}
+CG_HOTPLUG_STATE=${CG_HOTPLUG_STATE:-$CONFIG_DIR/scene.hotplug.state}
+cg_hotplug_value() {
+    case "$1" in 1|true|enabled|y|yes) printf '1\n';; *) printf '0\n';; esac
+}
+# 关闭热插拔前，把“原本是开着的”这件事记到 state 文件里，只记一次。
+cg_hotplug_suspend() {
+    [ -e "$CG_HOTPLUG_NODE" ] || return 0
+    local current
+    current=$(cat "$CG_HOTPLUG_NODE" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    [ -n "$current" ] || return 0
+    [ "$(cg_hotplug_value "$current")" = 1 ] || return 0
+    if [ ! -f "$CG_HOTPLUG_STATE" ]; then
+        printf '%s\n' "$(cg_hotplug_value "$current")" > "$CG_HOTPLUG_STATE" 2>/dev/null || return 1
+    fi
+    printf '0\n' > "$CG_HOTPLUG_NODE" 2>/dev/null || return 1
+    [ "$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")" = 0 ]
+}
+# 有任何核需要上线时，先确认热插拔是开着的；开着就直接返回，不产生多余写入。
+cg_hotplug_resume() {
+    [ -e "$CG_HOTPLUG_NODE" ] || return 0
+    local current want=1
+    if [ -f "$CG_HOTPLUG_STATE" ]; then
+        current=$(cat "$CG_HOTPLUG_STATE" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+        [ -n "$current" ] && want=$(cg_hotplug_value "$current")
+    fi
+    [ "$want" = 1 ] || want=1
+    if [ "$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")" != "$want" ]; then
+        printf '%s\n' "$want" > "$CG_HOTPLUG_NODE" 2>/dev/null || return 1
+    fi
+    [ "$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")" = "$want" ]
+}
+# 无条件把热插拔恢复成 recorded 原值并清掉 state；给解锁/退出/开机自愈用。
+cg_hotplug_restore() {
+    local rc=0 current want
+    if [ -f "$CG_HOTPLUG_STATE" ]; then
+        want=$(cg_hotplug_value "$(cat "$CG_HOTPLUG_STATE" 2>/dev/null)")
+        [ -n "$want" ] || want=1
+        if [ -e "$CG_HOTPLUG_NODE" ]; then
+            current=$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")
+            if [ "$current" != "$want" ]; then
+                printf '%s\n' "$want" > "$CG_HOTPLUG_NODE" 2>/dev/null || rc=1
+            fi
+            [ "$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")" = "$want" ] || rc=1
+        fi
+        [ "$rc" = 0 ] && rm -f "$CG_HOTPLUG_STATE"
+    elif [ -e "$CG_HOTPLUG_NODE" ]; then
+        # 没有 state 却仍是关闭态：说明上一次进程是被强杀的，代为打开，避免大核永久离线。
+        if [ "$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")" = 0 ]; then
+            printf '1\n' > "$CG_HOTPLUG_NODE" 2>/dev/null || rc=1
+            [ "$(cg_hotplug_value "$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)")" = 1 ] || rc=1
+        fi
+    fi
+    return "$rc"
+}
+cg_hotplug_report() {
+    local cur="missing" st="none"
+    [ -e "$CG_HOTPLUG_NODE" ] && cur=$(cat "$CG_HOTPLUG_NODE" 2>/dev/null)
+    [ -f "$CG_HOTPLUG_STATE" ] && st=$(cat "$CG_HOTPLUG_STATE" 2>/dev/null)
+    printf 'node=%s\ncurrent=%s\nsaved=%s\n' "$CG_HOTPLUG_NODE" "$cur" "$st"
+}
 cg_cpu_set_online() {
     local id="$1" value="$2" node="$CG_CPU_ROOT/cpu$1/online" other found=0
     case "$id" in ''|*[!0-9]*) return 1;; esac
@@ -373,15 +434,12 @@ cg_cpu_set_online() {
         [ "$found" = 1 ] || return 1
     else [ "$value" != 0 ] || return 0; fi
     [ -e "$node" ] || return 1
-    local hotplug="$CG_CPU_ROOT/cpuhotplug/enabled" current
-    if [ -e "$hotplug" ]; then
-        current=$(cat "$hotplug" 2>/dev/null | tr '[:upper:]' '[:lower:]')
-        case "$current" in 1|true|enabled)
-            if [ ! -f "$CONFIG_DIR/scene.hotplug.state" ]; then
-                printf '%s\n' "$current" > "$CONFIG_DIR/scene.hotplug.state" || return 1
-            fi
-            echo 0 > "$hotplug" || return 1;;
-        esac
+    # 关核前必须先关热插拔，否则内核会把核自动拉回；上线前必须先开热插拔，
+    # 否则写 online=1 会被内核立刻回退。两个方向都要成对处理。
+    if [ "$value" = 0 ]; then
+        cg_hotplug_suspend || return 1
+    else
+        cg_hotplug_resume || return 1
     fi
     chmod 0755 "$node" || return 1
     printf '%s\n' "$value" > "$node" 2>/dev/null || return 1

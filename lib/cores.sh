@@ -70,6 +70,10 @@ do_unlock() {
     local c failed=0
     UNLOCK_FAILED=""
     core_guard_enter || { UNLOCK_FAILED=busy; return 1; }
+    # 锁核期间热插拔被关掉过，解锁时必须先无条件恢复，
+    # 否则内核不会把大核重新拉回，表现为“已解锁但大核不参与”。
+    # 恢复失败不影响解锁判定，避免 core_ctl 备份残留把解锁永久卡死。
+    restore_core_ctl || true
     for c in $(all_cpus); do
         if ! cpu_online "$c"; then
             set_cpu "$c" 1 || failed=1

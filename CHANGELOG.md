@@ -1,3 +1,14 @@
+# v2.4.3-pro / 243
+- 修复「已解锁但大核不参与」：解锁出口恢复 CPU 热插拔（cpuhotplug/enabled）。
+- cg_cpu_set_online 改为双向成对处理：关核前 suspend、上线前 resume，避免写 online=1 被内核立刻回退。
+- 新增 cg_hotplug_suspend/resume/restore/report 五个函数，state 记录原值，幂等写入不做多余操作。
+- do_unlock 在选取核心前无条件 restore_core_ctl，恢复失败不阻塞解锁判定。
+- restore_performance 结束前再兜一次热插拔/core_ctl，并按实际在线状态重算 UNLOCK_FAILED。
+- cg_hotplug_restore 自愈分支：无 state 但节点仍为 0（进程被强杀/直接删目录）时自动开回 1。
+- 新增 --hotplug-status / --hotplug-heal CLI 入口，便于手动核对与修复。
+- uninstall.sh 改用 cg_hotplug_restore，与运行时共用一套实现。
+- module.prop 升 v2.4.3-pro / 243，update.json 同步。
+- 修正 service.sh 配置目录初始化时序：CONFIG_DIR 提前到 source hardware.sh 之前，避免 --hotplug-status/--hotplug-heal 把 state 路径解成根目录。
 # v2.3.3-pro / 233
 
 - 修复小窗夺焦导致游戏漏判：每轮合并窗口候选与全部 resumed Activity，任一目标包名活跃即保持游戏模式。

@@ -7,10 +7,17 @@ for _cg_lib in config hardware freeze cores frequency probe runtime thermal adap
 done
 unset _cg_lib
 if [ ! -f "$MODDIR/hardware.sh" ]; then echo "缺少 hardware.sh" >&2; exit 1; fi
+# CONFIG_DIR 必须早于 hardware.sh 被 source：热插拔 state 路径依赖它
+CONFIG_DIR="/data/adb/CoreGate"
 . "$MODDIR/hardware.sh"
 if [ "$1" = --hardware-status ]; then cg_hardware_report; exit 0; fi
+# 热插拔状态查询与自愈入口：主循环存活时也能手动核对/修复
+if [ "$1" = --hotplug-status ]; then cg_hotplug_report; exit 0; fi
+if [ "$1" = --hotplug-heal ]; then
+    if cg_hotplug_restore; then echo "hotplug healed"; exit 0; fi
+    cg_hotplug_report; echo "hotplug heal failed" >&2; exit 1
+fi
 MODULE_ID=$(basename "$MODDIR")
-CONFIG_DIR="/data/adb/CoreGate"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 PACKAGES_FILE="$CONFIG_DIR/packages.txt"
 CAPTURE_FILE="$CONFIG_DIR/capture.txt"

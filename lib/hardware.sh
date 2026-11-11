@@ -9,11 +9,7 @@ online_count() {
     echo "$n"
 }
 restore_core_ctl() {
-    if [ -f "$CONFIG_DIR/scene.hotplug.state" ]; then
-        if cat "$CONFIG_DIR/scene.hotplug.state" > "$CG_CPU_ROOT/cpuhotplug/enabled" 2>/dev/null; then
-            rm -f "$CONFIG_DIR/scene.hotplug.state"
-        fi
-    fi
+    cg_hotplug_restore
     [ -f "$CORE_CTL_BACKUP" ] || return 0
     while IFS="$(printf '\t')" read -r node val; do
         [ -z "$node" ] && continue
@@ -97,4 +93,3 @@ manual_del() {
 manual_clear() {
     rm -f "$MANUAL_FILE" "$MANUAL_FILE.tmp" "$CONFIG_DIR/core.selection" 2>/dev/null
 }
-
